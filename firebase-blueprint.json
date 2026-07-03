@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profiles containing firm roles and metadata",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique Firebase Authentication user ID"
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's text name"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["Admin", "Lawyer", "Paralegal"],
+          "description": "The firm-level clearance role"
+        },
+        "firmId": {
+          "type": "string",
+          "description": "Identifier of the law firm"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of creation"
+        }
+      },
+      "required": ["uid", "email", "displayName", "role", "firmId"]
+    },
+    "Case": {
+      "title": "Legal Case File",
+      "description": "A single legal case containing arguments, evidence, documents, and compliance records",
+      "type": "object",
+      "properties": {
+        "caseId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "clientName": {
+          "type": "string"
+        },
+        "caseNumber": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Active", "Closed"]
+        },
+        "createdByUid": {
+          "type": "string"
+        },
+        "firmId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "sharedWithUids": {
+          "type": "array"
+        },
+        "encryptedPayload": {
+          "type": "string",
+          "description": "Client-side encrypted JSON case details (Sovereign PII summary elements)"
+        },
+        "isE2EEncrypted": {
+          "type": "boolean"
+        },
+        "extractedInfo": {
+          "type": "object"
+        },
+        "summaries": {
+          "type": "object"
+        },
+        "criticalEvidence": {
+          "type": "array"
+        },
+        "chatbotWebhookToken": {
+          "type": "string"
+        }
+      },
+      "required": ["caseId", "title", "clientName", "caseNumber", "status", "createdByUid", "firmId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection"
+    },
+    "/cases/{caseId}": {
+      "schema": "Case",
+      "description": "Secure legal case database"
+    }
+  }
+}

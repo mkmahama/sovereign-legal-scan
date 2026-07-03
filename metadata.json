@@ -1,0 +1,6 @@
+{
+  "name": "Aegis Sovereign Legal Scan",
+  "description": "Secure client-side encrypted document scan, AI OCR legal indexing, NLP evidence highlighting, and chatbot messaging integrations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

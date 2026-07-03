@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function firmMembership(firmId) { return get(/databases/$(database)/documents/firmMemberships/$(firmId + '_' + request.auth.uid)); }
+    function activeFirmMember(firmId) { return signedIn() && firmMembership(firmId).data.status == 'Active'; }
+    function firmAdmin(firmId) { return activeFirmMember(firmId) && firmMembership(firmId).data.firmRole in ['Owner', 'Admin']; }
+    function caseMembership(caseId) { return get(/databases/$(database)/documents/caseMemberships/$(caseId + '_' + request.auth.uid)); }
+    function activeCaseMember(caseId) { return signedIn() && caseMembership(caseId).data.status == 'Active'; }
+    function casePermission(caseId, permission) { return activeCaseMember(caseId) && caseMembership(caseId).data.permissions[permission] == true; }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || activeFirmMember(resource.data.firmId));
+      allow write: if false;
+    }
+    match /firms/{firmId} {
+      allow read: if activeFirmMember(firmId);
+      allow write: if false;
+    }
+    match /firmMemberships/{membershipId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || firmAdmin(resource.data.firmId));
+      allow write: if false;
+    }
+    match /invitations/{invitationId} { allow read, write: if false; }
+    match /caseMemberships/{membershipId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || firmAdmin(resource.data.firmId) || casePermission(resource.data.caseId, 'canShare'));
+      allow write: if false;
+    }
+    match /cases/{caseId} {
+      allow read: if signedIn() && (activeFirmMember(resource.data.firmId) || activeCaseMember(caseId));
+      allow create: if signedIn() && activeFirmMember(request.resource.data.firmId) && request.resource.data.createdByUid == request.auth.uid;
+      allow update: if signedIn() && request.resource.data.firmId == resource.data.firmId && request.resource.data.createdByUid == resource.data.createdByUid && (resource.data.createdByUid == request.auth.uid || casePermission(caseId, 'canEdit'));
+      allow delete: if signedIn() && (resource.data.createdByUid == request.auth.uid || casePermission(caseId, 'canShare'));
+    }
+    match /courtRulePacks/{rulePackId} { allow read: if signedIn(); allow write: if false; }
+    match /courtDocumentTemplates/{templateId} { allow read: if signedIn() && (resource.data.firmId == null || activeFirmMember(resource.data.firmId)); allow write: if false; }
+    match /courtDocuments/{documentId} { allow read, write: if false; }
+    match /caseFiles/{fileId} { allow read, write: if false; }
+    match /documentRevisions/{revisionId} { allow read, write: if false; }
+    match /courtFees/{feeId} { allow read, write: if false; }
+    match /caseDeadlines/{deadlineId} { allow read, write: if false; }
+    match /messageThreads/{threadId} { allow read, write: if false; }
+    match /messages/{messageId} { allow read, write: if false; }
+    match /channelIdentities/{identityId} { allow read, write: if false; }
+    match /quarantinedFiles/{fileId} { allow read, write: if false; }
+    match /auditEvents/{eventId} { allow read: if signedIn() && activeFirmMember(resource.data.firmId); allow write: if false; }
+    match /providerEvents/{eventId} { allow read, write: if false; }
+    match /systemConfiguration/{documentId} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
