@@ -1,57 +1,43 @@
 # Runpod olmOCR Worker
 
-This image wraps AllenAI's official `alleninstituteforai/olmocr:latest`
-image with a Runpod Serverless handler. The lighter base avoids pushing the
-model-bundled image from a local laptop; Runpod downloads/loads the model on
-the GPU worker.
+This folder contains the Runpod Serverless handler used by the app's
+Convert2text (`C2T`) flow.
 
-## Build
+The preferred deployment path is **no custom build**: run AllenAI's official
+olmOCR image directly on Runpod and inject this small handler through an
+environment variable. This avoids GitHub Actions and local Docker Desktop disk
+limits when unpacking the very large CUDA/model layers.
 
-Preferred: build in GitHub Actions so local Docker Desktop does not need to
-pull the large Linux AMD64 CUDA layers. Push this repo to GitHub and run:
+## Preferred: Direct Runpod Deployment
 
-```text
-Actions -> Build Runpod olmOCR worker -> Run workflow
-```
-
-The workflow publishes:
-
-```text
-ghcr.io/<github-owner>/olmocr-runpod-worker:latest
-```
-
-Manual local build:
+Print the exact values to paste into Runpod:
 
 ```bash
-docker build -t YOUR_REGISTRY/olmocr-runpod-worker:latest runpod/olmocr-worker
+node runpod/olmocr-worker/print-direct-deploy-config.mjs
 ```
-
-## Push
-
-```bash
-docker push YOUR_REGISTRY/olmocr-runpod-worker:latest
-```
-
-## Runpod Endpoint
 
 In Runpod, choose **Serverless > New Endpoint > Deploy from a Docker image**.
 
-Use:
-
 ```text
-Container image: YOUR_REGISTRY/olmocr-runpod-worker:latest
-Start command: python -u /worker/handler.py
+Container image: alleninstituteforai/olmocr:latest-with-model
+Start command: use the command printed by the script
 Endpoint type: Queue
 ```
 
-Environment variables:
+Paste the printed environment variables into the endpoint:
 
 ```text
+RUNPOD_HANDLER_B64=<printed by script>
 OLMOCR_MODEL=olmocr
 OLMOCR_WORKERS=1
 OLMOCR_MAX_CONCURRENT_REQUESTS=1
 OLMOCR_TIMEOUT_SECONDS=900
 ```
+
+Use a GPU with at least 24 GB VRAM. If Runpod shows a container disk/storage
+field, set it to 80 GB or higher because the official olmOCR image is large.
+
+## App Configuration
 
 After deployment, copy the Runpod endpoint ID into the app:
 
@@ -60,4 +46,14 @@ OLMOCR_PROVIDER=runpod
 OLMOCR_SERVER_URL=https://api.runpod.ai/v2/YOUR_ENDPOINT_ID
 OLMOCR_MODEL=allenai/olmOCR-2-7B-1025-FP8
 OLMOCR_API_KEY=your_runpod_api_key
+```
+
+## Optional: Custom Image Build
+
+Only use this if you have a Docker builder with enough disk for the official
+olmOCR CUDA layers:
+
+```text
+docker build --platform linux/amd64 -t YOUR_REGISTRY/olmocr-runpod-worker:latest runpod/olmocr-worker
+docker push YOUR_REGISTRY/olmocr-runpod-worker:latest
 ```

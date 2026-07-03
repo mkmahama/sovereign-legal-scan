@@ -186,25 +186,27 @@ Firebase Storage or an encrypted object store while retaining the same case-file
 
 ### Runpod olmOCR worker image
 
-The Runpod Serverless worker lives in `runpod/olmocr-worker`. It wraps AllenAI's
-official `alleninstituteforai/olmocr:latest` image, accepts the C2T payload,
-runs `olmocr`, and returns Markdown text.
+The Runpod Serverless worker lives in `runpod/olmocr-worker`. Because AllenAI's
+official olmOCR CUDA/model image is very large, the preferred deployment avoids
+building a custom image in GitHub Actions. Instead, deploy the official image
+directly on Runpod and inject the small handler from this repo.
 
-Build for Runpod's Linux GPU platform:
-
-```bash
-docker build --platform linux/amd64 -t YOUR_REGISTRY/olmocr-runpod-worker:latest runpod/olmocr-worker
-```
-
-Push after logging in to your registry:
+Print the values to paste into Runpod:
 
 ```bash
-docker push YOUR_REGISTRY/olmocr-runpod-worker:latest
+node runpod/olmocr-worker/print-direct-deploy-config.mjs
 ```
 
-In Runpod choose **Serverless → New Endpoint → Deploy from a Docker image** and use
-that image with **Queue** routing. The image intentionally avoids the
-`latest-with-model` base because that layer is very large for local build/push.
+Then create a Runpod **Serverless → Deploy from a Docker image** endpoint:
+
+```text
+Container image: alleninstituteforai/olmocr:latest-with-model
+Start command: printed by the script
+Endpoint type: Queue
+```
+
+Paste the printed environment variables into Runpod. The app calls the endpoint
+at `https://api.runpod.ai/v2/<ENDPOINT_ID>/runsync`.
 
 ### Review Desk AI analysis
 
