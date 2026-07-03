@@ -7,6 +7,7 @@ const handlerPath = resolve(here, "handler.py");
 const handlerB64 = readFileSync(handlerPath).toString("base64");
 
 const startCommand = [
+  "bash",
   "-lc",
   '"set -e; python -m pip install --no-cache-dir runpod; mkdir -p /worker; printf \'%s\' \\"$RUNPOD_HANDLER_B64\\" | base64 -d > /worker/handler.py; exec python -u /worker/handler.py"',
 ].join(" ");
